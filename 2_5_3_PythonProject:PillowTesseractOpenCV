@@ -1,0 +1,66 @@
+import zipfile
+from zipfile import ZipFile
+from PIL import Image
+import pytesseract
+import cv2 as cv
+import numpy as np
+import math
+
+## loading the face detection classifier
+face_cascade = cv.CascadeClassifier('readonly/haarcascade_frontalface_default.xml')
+
+## open zipfile
+png_files = {}
+with ZipFile('readonly/small_img.zip') as myzip:
+    for entry in myzip.infolist():
+        with myzip.open(entry) as file:
+            img = Image.open(file).convert('RGB')
+            png_files[entry.filename] = {'pil_image': img}
+        
+## detect string
+# detect text
+for image in png_files.keys():
+    text = pytesseract.image_to_string(png_files[image]['pil_image'])
+    png_files[image]['text'] = text
+ 
+## image detection
+# define an image_detection function
+def image_detection(image, output):
+    cv_img = np.array(image)
+    faces = face_cascade.detectMultiScale(cv_img, 1.5, 5)
+    # crop image and save it in the dictionary
+    for x,y,w,h in faces:
+        face = image.crop((x,y,x+w,y+h))
+        face.thumbnail((100,100), Image.ANTIALIAS)
+        output.append(face)
+# use the function to crop images and create dictionary
+for image in png_files.keys():
+    png_files[image]['faces'] = []
+    image_detection(png_files[image]['pil_image'],png_files[image]['faces'])
+ 
+## create contact_sheet and match
+def match(user_input):
+    for image in png_files:
+        if user_input in png_files[image]['text']:
+            if len(png_files[image]['faces']) != 0:
+                print('Results found in file {}'.format(image))
+                # create contact_sheet
+                height = math.ceil(len(png_files[image]['faces'])/5)
+                contact_sheet = Image.new('RGB', (500, 100*height))
+                x = 0
+                y = 0
+                for img in png_files[image]['faces']:
+                    contact_sheet.paste(img, (x, y))
+                    if x + 100 == contact_sheet.width:
+                        x = 0
+                        y = y + 100
+                    else:
+                        x = x + 100
+                display(contact_sheet)
+            else:
+                print('Results found in file {}\nBut there were no faces in that file!'.format(image))
+    return
+    
+ ## search words and match pictures
+ match("Christopher")
+ match("pizza")
