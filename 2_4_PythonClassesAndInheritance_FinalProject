@@ -50,16 +50,16 @@ class WOFComputerPlayer(WOFPlayer):
                         poss_lst.append(letter)
         return poss_lst
     def getMove(self, category, obscuredPhrase, guessed):
-        temp_lst = getPossibleLetters(guessed)
+        temp_lst = self.getPossibleLetters(guessed)
         if len(temp_lst) == 0:
             return 'pass'
         else:
-            temp_result = smartCoinFlip()
+            temp_result = self.smartCoinFlip()
             if temp_result == 'True':
                 for l in self.SORTED_FREQUENCIES:
                     if l in temp_lst:
                         return l
-            elif temp_result == 'False':
+            else:
                 return random.choice(temp_lst)
 
 
